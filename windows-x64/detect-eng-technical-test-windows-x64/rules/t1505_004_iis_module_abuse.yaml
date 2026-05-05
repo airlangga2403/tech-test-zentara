@@ -9,13 +9,11 @@ logsource:
     product: windows
 
 detection:
-    # 🔥 indikator kuat (langsung alert, pencarian global)
     selection_strong:
         - '*msf.dll*'
         - '*IIS_Backdoor*'
         - '*IIS-Backdoor.dll*'
 
-    # ⚠️ indikator perilaku (kombinasi saja, pencarian global)
     selection_behavior:
         - '*appcmd*'
         - '*install module*'
