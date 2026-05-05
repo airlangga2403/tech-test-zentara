@@ -1,0 +1,34 @@
+title: Detect Suspicious IIS Module Installation (T1505.004)
+id: c4f2b918-1b9a-4c2d-9a8f-5e7c8d9a1b2c
+status: experimental
+description: Detects IIS backdoor module installation and logging tampering with reduced noise
+author: Airlangga Permana Putra
+date: '2026/04/30'
+
+logsource:
+    product: windows
+
+detection:
+    # 🔥 indikator kuat (langsung alert, pencarian global)
+    selection_strong:
+        - '*msf.dll*'
+        - '*IIS_Backdoor*'
+        - '*IIS-Backdoor.dll*'
+
+    # ⚠️ indikator perilaku (kombinasi saja, pencarian global)
+    selection_behavior:
+        - '*appcmd*'
+        - '*install module*'
+        - '*dontlog*'
+        - '*Logfile.enabled*'
+        - '*gacutil*'
+
+    condition: selection_strong or selection_behavior
+
+falsepositives:
+    - Rare IIS administration activity
+
+level: high
+
+tags:
+    - attack.t1505.004

@@ -1,0 +1,227 @@
+api:
+  enabled: true
+  address: "0.0.0.0:8686"
+
+sources:
+  splunk_hec_in:
+    type: splunk_hec
+    address: "0.0.0.0:8088"
+    token: "${VECTOR_HEC_TOKEN}"
+
+transforms:
+  # 1. Pisahkan jalur data berdasarkan ada atau tidaknya metadata honeypot
+  route_logs:
+    type: route
+    inputs:
+      - splunk_hec_in
+    route:
+      honeypot: 'contains(string!(.message), "src_ip") || contains(string!(.message), "dest_port")'
+      attack: '!contains(string!(.message), "src_ip")'
+
+  # 2. Proses Attack Dataset (Mapping to ECS Format)
+  attack_events:
+    type: remap
+    inputs:
+      - route_logs.attack
+    source: |
+      .timestamp = now()
+      .splunk_channel = del(.splunk_channel)
+      .labels = {}
+      
+      # ECS Mapping
+      .ecs.version = "8.0.0"
+      .event.dataset = "logs-attack"
+      .event.kind = "alert"
+      .event.category = ["threat"]
+
+      parsed, parse_err = parse_json(string!(.message))
+      if parse_err == null {
+        . = parsed
+      }
+      if !exists(.event) {
+        .event = {}
+      }
+      if !exists(.labels) {
+        .labels = {}
+      }
+
+  # 3. Proses Honeypot dan berikan tag teknik + ECS Format
+  honeypot_enrich:
+    type: remap
+    inputs:
+      - route_logs.honeypot
+    source: |
+      .timestamp = now()
+      .splunk_channel = del(.splunk_channel)
+      .labels = {}
+      
+      # ECS Mapping
+      .ecs.version = "8.0.0"
+      .event.dataset = "logs-honeypot"
+      .event.kind = "event"
+      .event.category = ["intrusion_detection"]
+      
+      parsed, parse_err = parse_json(string!(.message))
+      if parse_err != null {
+        abort
+      }
+      . = parsed
+
+      .labels.dataset_name = "honeypot_tpot"
+      .labels.technique_id = null
+      .threat.technique.id = null # ECS standard field for MITRE ID
+
+      if exists(.type) && .type == "P0f" {
+        .labels.technique_id = "T1599.001"
+        .threat.technique.id = "T1599.001"
+        if exists(.os) && (.os == "???" || .os == "Linux" || .os == "Windows") {
+          if exists(.params) && .params != "none" {
+            .labels.technique_id = "T1599.001"
+            .threat.technique.id = "T1599.001"
+          }
+        }
+        if exists(.ipSharing) && .ipSharing == true {
+          .labels.technique_id = "T1599.001"
+          .threat.technique.id = "T1599.001"
+        }
+      }
+
+      if exists(.type) && .type == "Suricata" {
+        .labels.technique_id = "T1190"
+        .threat.technique.id = "T1190"
+        if exists(.alert_signature) {
+          sig, sig_err = downcase(.alert_signature)
+          if sig_err == null {
+            if contains(sig, "port scan") || contains(sig, "nmap") || contains(sig, "syn flood") {
+              .labels.technique_id = "T1498"
+              .threat.technique.id = "T1498"
+            }
+            if contains(sig, "web") || contains(sig, "http") || contains(sig, "apache") || contains(sig, "nginx") {
+              .labels.technique_id = "T1190"
+              .threat.technique.id = "T1190"
+            }
+            if contains(sig, "php") || contains(sig, "info.php") || contains(sig, "admin") {
+              .labels.technique_id = "T1190"
+              .threat.technique.id = "T1190"
+            }
+            if contains(sig, "command") || contains(sig, " injection") || contains(sig, "rce") {
+              .labels.technique_id = "T1190"
+              .threat.technique.id = "T1190"
+            }
+          }
+        }
+        if exists(.http.url) {
+          url, url_err = downcase(.http.url)
+          if url_err == null {
+            if contains(url, "admin") || contains(url, "wp-login") ||
+               contains(url, "phpinfo") || contains(url, ".env") ||
+               contains(url, "config") || contains(url, "webshell") ||
+               contains(url, "login") || contains(url, "git") {
+              .labels.technique_id = "T1190"
+              .threat.technique.id = "T1190"
+            }
+          }
+        }
+      }
+
+      if exists(.type) && .type == "Cowrie" {
+        .labels.technique_id = "T1110.001"
+        .threat.technique.id = "T1110.001"
+        cmd = ""
+        if exists(.cowrie_Command) {
+          c, c_err = to_string(.cowrie_Command)
+          if c_err == null {
+            cmd = cmd + c
+          }
+        }
+        if exists(.cowrie_Input) {
+          c, c_err = to_string(.cowrie_Input)
+          if c_err == null {
+            cmd = cmd + c
+          }
+        }
+        if cmd != "" {
+          cmd = downcase!(cmd)
+          if contains(cmd, "wget") || contains(cmd, "curl") || contains(cmd, "wget|") || contains(cmd, "curl|") {
+            .labels.technique_id = "T1105"
+            .threat.technique.id = "T1105"
+          }
+          if contains(cmd, "python") && (contains(cmd, "http") || contains(cmd, "socket")) {
+            .labels.technique_id = "T1105"
+            .threat.technique.id = "T1105"
+          }
+          if contains(cmd, "chmod") && (contains(cmd, "777") || contains(cmd, "+x")) {
+            .labels.technique_id = "T1222"
+            .threat.technique.id = "T1222"
+          }
+          if contains(cmd, "sudo") || contains(cmd, "su ") || contains(cmd, "su -") {
+            .labels.technique_id = "T1003"
+            .threat.technique.id = "T1003"
+          }
+        }
+      }
+
+      if exists(.type) && .type == "Dionaea" {
+        .labels.technique_id = "T1190"
+        .threat.technique.id = "T1190"
+      }
+      if exists(.type) && .type == "Fatt" {
+        .labels.technique_id = "T1048"
+        .threat.technique.id = "T1048"
+      }
+      if exists(.type) && .type == "Mailoney" {
+        .labels.technique_id = "T1110"
+        .threat.technique.id = "T1110"
+      }
+      if exists(.type) && .type == "Honeytrap" {
+        .labels.technique_id = "T1190"
+        .threat.technique.id = "T1190"
+      }
+
+      if .labels.technique_id == null {
+        if exists(.http.url) {
+          .labels.technique_id = "T1190"
+          .threat.technique.id = "T1190"
+        }
+        if exists(.shasum) || exists(.fileinfo.md5) {
+          .labels.technique_id = "T1105"
+          .threat.technique.id = "T1105"
+        }
+      }
+
+sinks:
+  os_attack:
+    type: elasticsearch
+    inputs:
+      - attack_events
+    endpoints:
+      - "http://opensearch:9200"
+    auth:
+      strategy: basic
+      user: "${VECTOR_OPENSEARCH_USERNAME}"
+      password: "${VECTOR_OPENSEARCH_PASSWORD}"
+    api_version: auto
+    suppress_type_name: true
+    mode: bulk
+    bulk:
+      action: create
+      index: "logs-attack"
+    compression: none
+
+  os_honeypot:
+    type: elasticsearch
+    inputs:
+      - honeypot_enrich
+    endpoints:
+      - "http://opensearch:9200"
+    auth:
+      strategy: basic
+      user: "${VECTOR_OPENSEARCH_USERNAME}"
+      password: "${VECTOR_OPENSEARCH_PASSWORD}"
+    api_version: auto
+    suppress_type_name: true
+    mode: bulk
+    bulk:
+      action: create
+      index: "logs-honeypot"
+    compression: none
