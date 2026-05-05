@@ -1,0 +1,82 @@
+{
+  "type": "bundle",
+  "id": "bundle--9c1a6f2e-1234-4b2a-9cde-7e8f12345678",
+  "spec_version": "2.1",
+  "objects": [
+    {
+      "type": "indicator",
+      "spec_version": "2.1",
+      "id": "indicator--11111111-1111-4111-8111-111111111111",
+      "created": "2026-04-30T00:00:00.000Z",
+      "modified": "2026-04-30T00:00:00.000Z",
+      "name": "Honeypot High Volume Scanner - 185.177.72.13",
+      "indicator_types": ["malicious-activity"],
+      "pattern_type": "stix",
+      "pattern": "[ipv4-addr:value = '185.177.72.13']",
+      "valid_from": "2026-03-31T06:00:00.000Z",
+      "valid_until": "2026-06-30T06:00:00.000Z",
+      "labels": ["honeypot","scanner","high-volume"],
+      "confidence": 85
+    },
+    {
+      "type": "indicator",
+      "spec_version": "2.1",
+      "id": "indicator--22222222-2222-4222-8222-222222222222",
+      "created": "2026-04-30T00:00:00.000Z",
+      "modified": "2026-04-30T00:00:00.000Z",
+      "name": "Honeypot Recon Activity - 197.14.55.168",
+      "indicator_types": ["malicious-activity"],
+      "pattern_type": "stix",
+      "pattern": "[ipv4-addr:value = '197.14.55.168']",
+      "valid_from": "2026-03-31T06:00:00.000Z",
+      "valid_until": "2026-06-30T06:00:00.000Z",
+      "labels": ["honeypot","reconnaissance"],
+      "confidence": 80
+    },
+    {
+      "type": "indicator",
+      "spec_version": "2.1",
+      "id": "indicator--33333333-3333-4333-8333-333333333333",
+      "created": "2026-04-30T00:00:00.000Z",
+      "modified": "2026-04-30T00:00:00.000Z",
+      "name": "Honeypot External Probe - 77.42.70.19",
+      "indicator_types": ["malicious-activity"],
+      "pattern_type": "stix",
+      "pattern": "[ipv4-addr:value = '77.42.70.19']",
+      "valid_from": "2026-03-31T06:00:00.000Z",
+      "valid_until": "2026-06-30T06:00:00.000Z",
+      "labels": ["honeypot","scanner"],
+      "confidence": 75
+    },
+    {
+      "type": "indicator",
+      "spec_version": "2.1",
+      "id": "indicator--44444444-4444-4444-8444-444444444444",
+      "created": "2026-04-30T00:00:00.000Z",
+      "modified": "2026-04-30T00:00:00.000Z",
+      "name": "Honeypot VPS Scanner - 134.199.195.17",
+      "indicator_types": ["malicious-activity"],
+      "pattern_type": "stix",
+      "pattern": "[ipv4-addr:value = '134.199.195.17']",
+      "valid_from": "2026-03-31T06:00:00.000Z",
+      "valid_until": "2026-06-30T06:00:00.000Z",
+      "labels": ["honeypot","scanner","cloud"],
+      "confidence": 75
+    },
+    {
+      "type": "indicator",
+      "spec_version": "2.1",
+      "id": "indicator--55555555-5555-4555-8555-555555555555",
+      "created": "2026-04-30T00:00:00.000Z",
+      "modified": "2026-04-30T00:00:00.000Z",
+      "name": "Honeypot Botnet Activity - 159.89.234.197",
+      "indicator_types": ["malicious-activity"],
+      "pattern_type": "stix",
+      "pattern": "[ipv4-addr:value = '159.89.234.197']",
+      "valid_from": "2026-03-31T06:00:00.000Z",
+      "valid_until": "2026-06-30T06:00:00.000Z",
+      "labels": ["honeypot","botnet"],
+      "confidence": 80
+    }
+  ]
+}
